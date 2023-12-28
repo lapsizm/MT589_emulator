@@ -30,9 +30,7 @@ struct microcommand {
     std::string tag = "";
 
     // for external stm32:
-    uint8_t is_external_command : 1;    // является ли МК - общением с внешним устройством
-    std::vector<uint8_t> f_ext;        // отправляемые данные (4 байта)
-
+    std::string f_ext;        // микрокоманда на отправку данных
 };
 
 struct ROM

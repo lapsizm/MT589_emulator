@@ -2,6 +2,16 @@
 #include<QDebug>
 #include <iostream>
 
+#define SETUP 1
+#define SEND 2
+#define RECIEVE 4
+
+#define UART 1
+#define I2C 2
+#define SPI 4
+#define GPIO1 8
+#define GPIO2 16
+
 MK589::MK589() {
     cpe_arr.resize(cpe_amount);
     this->reset();
@@ -66,32 +76,108 @@ void MK589::reset() {
     mcu.reset();
 }
 
+int MK589::setup(int Type_out, int interface_type) {
+
+    uint8_t data[7] = { 255,0,0 ,255,255,255,255 };  // строка для передачи
+    data[1] = SETUP;
+    data[2] = Type_out;
+    data[3] = interface_type;
+    DWORD dwSize = sizeof(data);   // размер этой строки
+    DWORD dwBytesWritten;    // тут будет количество собственно переданных байт
+
+    BOOL iRet = WriteFile(this->hSerial, data, dwSize, &dwBytesWritten, NULL);
+    qInfo() << dwSize << " Bytes in string. " << dwBytesWritten << " Bytes sended. " << "\n";
+    for (size_t i = 0; i < dwSize; i++)
+    {
+        qInfo() << (int)data[i] << " ";
+    }
+    qInfo() << "\n";
+    return iRet;
+}
+
+int MK589::send(int interface_type, const char package[3]) {
+
+    uint8_t data[7] = { 255,0,0 ,package[0], package[1] ,package[2] , 255 };  // строка для передачи
+    data[1] = SEND;
+    data[2] = interface_type;
+    DWORD dwSize = sizeof(data);   // размер этой строки
+    DWORD dwBytesWritten;    // тут будет количество собственно переданных байт
+
+    BOOL iRet = WriteFile(this->hSerial, data, dwSize, &dwBytesWritten, NULL);
+    qInfo() << dwSize << " Bytes in string. " << dwBytesWritten << " Bytes sended. " << "\n";
+    for (size_t i = 0; i < dwSize; i++)
+    {
+        qInfo() << (int)data[i] << " ";
+    }
+    qInfo() << "\n";
+    return iRet;
+}
+
+
 void MK589::do_fetch_decode_execute_cycle(const microcommand &mc) {
     mcu.X = std::bitset<8> ((mc.M & 0xFF00) >> 8);
     mcu.fetch(mc.AC, mcu.X, mc.FC, mc.LD);
     fetch_cpe(mc.F, mc.K, mc.I, mc.M, mc.ED, mc.EA);
 
-    if(mc.is_external_command){
+    if(!(mc.f_ext == "00000000")){
+        // type comand | type interface | num_reg
+        // 0101**** - setup, uart
+        // 0110**** - setup, gpio1
+        // 1001**** - send, uart, from num **** of reg
+        // 1001**** - send, gpio1, from num **** of reg
+
         qInfo() << "СТОЮ НА КОМАНДЕ ОТПРАВИТЬ\n";
-        char data[4];  // строка для передачи
-        data[0] = (char)mc.f_ext[0];
-        data[1] = (char)mc.f_ext[1];
-        data[2] = (char)mc.f_ext[2];
-        data[3] = (char)mc.f_ext[3];
-        DWORD dwSize = sizeof(data);   // размер этой строки
-        DWORD dwBytesWritten;    // тут будет количество собственно переданных байт
+        std::string r_group = mc.f_ext.substr(4, 4); // num_reg
+        std::string f_group_0 = mc.f_ext.substr(0,2); // type comand
+        std::string f_group_1 = mc.f_ext.substr(2,2); // type interface
+        uint8_t num_reg =  std::stoi(r_group, 0, 2);
+        char package[3] = {0, 0, 0};
+        if(f_group_0 == "01"){
+            // setup
+            if(f_group_1 == "01"){
+                //uart
+                if (!setup(SEND, UART)) {
+                    qInfo() << "FUck\n";
+                }
+            }
+            else if(f_group_1 == "10"){
+                //GPIO1
+                if (!setup(SEND, GPIO1)) {
+                    qInfo() << "FUck\n";
+                }
+            }
+            else{
+                qInfo() << "Неизвестный тип микрокоманды!";
+            }
+        }
+        else if(f_group_0 == "10"){
+            // write
+            if(f_group_1 == "01"){
+                //uart
+                package[2] = (char)MEM[num_reg];
+                if (!send(UART, package)) {
+                    qInfo() << "FUck\n";
+                }
 
-
-        BOOL iRet = ::WriteFile(hSerial, data, dwSize, &dwBytesWritten, NULL);
-
-        qInfo() << dwSize << " Bytes in string. " << dwBytesWritten << " Bytes sended. " << "\n";
-
-        if(dwBytesWritten == 4){
-            qInfo() << "Общение с внешним устройством успешно!" << "\n";
+            }
+            else if(f_group_1 == "10"){
+                //GPIO1
+                 package[2] = (char)MEM[num_reg];
+                if (!send(GPIO1, package)) {
+                    qInfo() << "FUck\n";
+                }
+            }
+            else{
+                qInfo() << "Неизвестный тип микрокоманды!";
+            }
+        }
+        else if(f_group_0 == "11"){
+            // read
         }
         else{
-            qInfo() << "ОШИБКА!" << "\n";
+            qInfo() << "Неизвестный тип микрокоманды!";
         }
+
     }
 
     decode(); // both mcu and cpe

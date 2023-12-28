@@ -91,12 +91,7 @@ fm::programm_data fm::get_data(const std::string& filename) {
             command.K = command_data["K"].get<int>();
             command.tag = command_data["Tag"].get<std::string>();
 
-            command.is_external_command = command_data["is_external_command"].get<int>();
-            command.f_ext.resize(4);
-            command.f_ext[0] =command_data["f_ext_0"].get<int>();
-            command.f_ext[1] =command_data["f_ext_1"].get<int>();
-            command.f_ext[2] =command_data["f_ext_2"].get<int>();
-            command.f_ext[3] =command_data["f_ext_3"].get<int>();
+            command.f_ext = command_data["f_ext"].get<std::string>();
 
             mk.rom.write(row, col, command);
         }
@@ -143,11 +138,7 @@ void fm::save(const std::string& filename, MK589& mk, int startCol, int startRow
                 command_data["K"] = command.K;
                 command_data["Tag"] = command.tag;
 
-                command_data["is_external_command"] = int(command.is_external_command);
-                command_data["f_ext_0"] = command.f_ext[0];
-                command_data["f_ext_1"] = command.f_ext[1];
-                command_data["f_ext_2"] = command.f_ext[2];
-                command_data["f_ext_3"] = command.f_ext[3];
+                command_data["f_ext"] = command.f_ext;
 
                 data["matrix"][std::to_string(row) + "-" + std::to_string(col)] = command_data;
             }

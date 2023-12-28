@@ -432,9 +432,14 @@ std::string string_to_hex(int n)
         hex = c + hex;
         n /= 16;
     }
+    if (hex.length() == 1) {
+        return '0' + hex;
+    }
+    if (hex.length() == 0) {
+        return "00";
+    }
     return hex;
 }
-
 void MainWindow::fillInputs() {
     if (model.currentPoint.isNull()) {
         ui->boxCPE->setCurrentIndex(0);
@@ -452,7 +457,6 @@ void MainWindow::fillInputs() {
         ui->edCheckBox->setChecked(false);
         on_boxJUMP_currentIndexChanged(0);
 
-        ui->EC_check->setChecked(false);
         ui->Ext_code->setText("00000000");
 
     } else {
@@ -476,7 +480,6 @@ void MainWindow::fillInputs() {
             ui->edCheckBox->setChecked(false);
             on_boxJUMP_currentIndexChanged(0);
 
-            ui->EC_check->setChecked(false);
             ui->Ext_code->setText("00000000");
 
         } else {
@@ -495,15 +498,9 @@ void MainWindow::fillInputs() {
             ui->eaCheckBox->setChecked(command.EA == 1);
             ui->edCheckBox->setChecked(command.ED == 1);
 
-            ui->EC_check->setChecked(command.is_external_command == 1);
+            qInfo() << "result fillInputs - Данный поинт != 0, в Ext_code ставится:" << command.f_ext <<  "\n";
 
-            std::ostringstream ss;
-            ss << string_to_hex(int(command.f_ext[0])) << string_to_hex(int(command.f_ext[1])) << string_to_hex(int(command.f_ext[2])) << string_to_hex(int(command.f_ext[3]));
-            std::string result = ss.str();
-
-            qInfo() << "result fillInputs - Данный поинт != 0, в Ext_code ставится:" << result <<  "\n";
-
-            ui->Ext_code->setText(result.c_str());
+            ui->Ext_code->setText(command.f_ext.c_str());
         }
     }
 }
@@ -540,20 +537,10 @@ void MainWindow::on_saveButton_clicked()
     command.CS = ui->ceCheckBox->isChecked() ? 1 : 0;
     command.EA = ui->eaCheckBox->isChecked() ? 1 : 0;
     command.ED = ui->edCheckBox->isChecked() ? 1 : 0;
-    command.is_external_command = ui->EC_check->isChecked() ? 1 : 0;
     std::string s = ui->Ext_code->text().toStdString();
-    std::vector<uint8_t> f_ext;
-    for(int i = 0; i < 4; ++i){
-        std::string temp = s.substr(i * 2, 2);
-        qInfo() << temp << "\n";
-        f_ext.push_back(fromHex(temp.c_str()));
-        qInfo() << "Нажата кнопка save, печатаю f_ext[i]: " << f_ext[i] << " ";;
-
-    }
+    qInfo() << "Нажата кнопка save, печатаю f_ext: " << s << " ";;
     qInfo() << "\n";
-
-
-    command.f_ext =f_ext;
+    command.f_ext = s;
 
 
     BYTE fc_buf = ((foc << 2) + fic) & 0b1111;

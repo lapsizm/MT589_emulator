@@ -65,6 +65,16 @@ private:
     void execute_cpe();
     void execute_cpe_right_rot();
     void unite_registers();
+
+
+    int setup(int Type_out, int interface_type);
+
+    int send(int interface_type, const char package[3]);
+
+
+
+
+
     //====decoding
     size_t r_group;
     size_t f_group;

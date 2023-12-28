@@ -16,9 +16,7 @@ ROM::ROM() {
            cell.LD = 0;
            cell.RW = 0;
            cell.CS = 0;
-           cell.is_external_command = 0;
-           cell.f_ext.resize(4);
-           cell.f_ext = {0,0,0,0};
+           cell.f_ext = "00000000";
        }
    }
 }
