@@ -113,6 +113,26 @@ int MK589::send(int interface_type, const char package[3]) {
     return iRet;
 }
 
+void MK589::ReadCOM(uint8_t num_reg)
+{
+    DWORD iSize;
+    char sReceivedChar[1] = { 'H' };
+    qInfo() << "HELLO" << num_reg;
+    for(int i = 0; i < 3000000; ++i){
+        //qInfo() << i << "\n";
+        ReadFile(this->hSerial, sReceivedChar, 1, &iSize, NULL);  // получаем 1 байт
+        if (iSize > 0){   // если что-то принято, выводим
+            qInfo() << "Recieved = " << (int)sReceivedChar[0] << "\n";
+            for(int i = 0; i < 1; ++i){
+                cpe_arr[i].MEM[num_reg] = uint8_t(sReceivedChar[0]);
+                qInfo() << "REG: " << cpe_arr[i].MEM[num_reg] << "\n";
+            }
+            break;
+        }
+    }
+
+}
+
 
 void MK589::do_fetch_decode_execute_cycle(const microcommand &mc) {
     mcu.X = std::bitset<8> ((mc.M & 0xFF00) >> 8);
@@ -121,10 +141,13 @@ void MK589::do_fetch_decode_execute_cycle(const microcommand &mc) {
 
     if(!(mc.f_ext == "00000000")){
         // type comand | type interface | num_reg
-        // 0101**** - setup, uart
-        // 0110**** - setup, gpio1
+        // 0101**** - setup, uart, send,
+        // 0110**** - setup, gpio1, send
+        // 0111**** - setup, uart, recv
         // 1001**** - send, uart, from num **** of reg
-        // 1001**** - send, gpio1, from num **** of reg
+        // 1010**** - send, gpio1, from num **** of reg
+        // 1101**** - recv, uart, to num **** of reg
+        // 1110**** - recv, gpio1, to num **** of reg
 
         qInfo() << "СТОЮ НА КОМАНДЕ ОТПРАВИТЬ\n";
         std::string r_group = mc.f_ext.substr(4, 4); // num_reg
@@ -143,6 +166,12 @@ void MK589::do_fetch_decode_execute_cycle(const microcommand &mc) {
             else if(f_group_1 == "10"){
                 //GPIO1
                 if (!setup(SEND, GPIO1)) {
+                    qInfo() << "FUck\n";
+                }
+            }
+            else if(f_group_1 == "11"){
+                //recv
+                if (!setup(RECIEVE, UART)) {
                     qInfo() << "FUck\n";
                 }
             }
@@ -172,7 +201,22 @@ void MK589::do_fetch_decode_execute_cycle(const microcommand &mc) {
             }
         }
         else if(f_group_0 == "11"){
-            // read
+
+            if(f_group_1 == "01"){
+                //uart
+                ReadCOM(num_reg);
+
+            }
+            else if(f_group_1 == "10"){
+                //GPIO1
+                package[2] = (char)MEM[num_reg];
+                if (!send(GPIO1, package)) {
+                    qInfo() << "FUck\n";
+                }
+            }
+            else{
+                qInfo() << "Неизвестный тип микрокоманды!";
+            }
         }
         else{
             qInfo() << "Неизвестный тип микрокоманды!";

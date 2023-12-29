@@ -71,6 +71,8 @@ private:
 
     int send(int interface_type, const char package[3]);
 
+    void ReadCOM(uint8_t num_reg);
+
 
 
 
