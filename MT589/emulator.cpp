@@ -93,10 +93,11 @@ int MK589::send(const char package[4]) {
 
 void MK589::ReadCOM(uint8_t num_reg)
 {
+    qInfo() << "Пришел в ридком1";
     COMMTIMEOUTS tTimeout;
     tTimeout.ReadIntervalTimeout = MAXWORD;
     tTimeout.ReadTotalTimeoutMultiplier = 0;
-    tTimeout.ReadTotalTimeoutConstant = 5000; // pas de time out = 0
+    tTimeout.ReadTotalTimeoutConstant = 3500    ; // pas de time out = 0
     tTimeout.WriteTotalTimeoutMultiplier = 0;
     tTimeout.WriteTotalTimeoutConstant = 0;
     if (!SetCommTimeouts((HANDLE)hSerial, &tTimeout))
@@ -104,11 +105,12 @@ void MK589::ReadCOM(uint8_t num_reg)
         return;
     }
     DWORD iSize;
-    char sReceivedChar[4];
+    uint8_t sReceivedChar[4];
     ReadFile(hSerial, &sReceivedChar, 4, &iSize, 0);  // получаем 1 байт
     if (iSize > 0) {   // если что-то принято, выводим.
+        qInfo() << iSize;
         for (int i = 0; i < 4; ++i) {
-            qInfo() << sReceivedChar[i];
+            qInfo() << i << (int)sReceivedChar[i];
         }
         qInfo() << "\n";
         cpe_arr[0].MEM[num_reg] = uint8_t(sReceivedChar[2]);
@@ -127,8 +129,7 @@ void MK589::do_fetch_decode_execute_cycle(const microcommand &mc) {
         // 0001**** - setup, uart-write
         // 0010**** - send from **** reg to stm by uart
         // 0011**** - setup uart-read
-        // 0100**** - write from **** reg to stm by uart
-        // 0101**** - read to **** reg from stm by uuart
+        // 0100**** - read to **** reg from stm by uart
 
 
         qInfo() << "СТОЮ НА КОМАНДЕ ОТПРАВИТЬ\n";
@@ -137,14 +138,21 @@ void MK589::do_fetch_decode_execute_cycle(const microcommand &mc) {
 
         uint8_t num_reg =  std::stoi(r_group, 0, 2);
         if(f_group == "0001"){
-            char data_setup[4] = { 66,0b00001111,0b10000000,194 };
+            char data_setup[4] = { 66,0b00001111,(char)0b10000000,(char)194 };
             send(data_setup);
         }
         else if(f_group == "0010"){
-            char data_write[4] = {66,0b00000011,0,194};
+            char data_write[4] = {66,0b00000011,0,(char)194};
             data_write[2] = (char)MEM[num_reg];
-            qInfo() << "REg is "  << num_reg;
+            qInfo() << "REg is "  << data_write[2];
             send(data_write);
+        }
+        else if(f_group == "0011"){
+            char data_read[4] = { 34,0b00000011,(char)138,(char)162 };
+            send(data_read);
+        }
+        else if(f_group == "0100"){
+            ReadCOM(num_reg);
         }
         else{
             qInfo() << "Неизвестный тип микрокоманды!";

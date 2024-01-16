@@ -813,7 +813,7 @@ void MainWindow::on_action_COM_triggered()
                 continue;
             }
 
-            char data[4] = { 98,0,0,226 };  // строка для передачи
+            char data[4] = { 98,0,0,(char)226 };  // строка для передачи
             DWORD dwSize = sizeof(data);   // размер этой строки
             DWORD dwBytesWritten;    // тут будет количество собственно переданных байт
 
