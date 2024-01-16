@@ -67,9 +67,7 @@ private:
     void unite_registers();
 
 
-    int setup(int Type_out, int interface_type);
-
-    int send(int interface_type, const char package[3]);
+    int send(const char package[4]);
 
     void ReadCOM(uint8_t num_reg);
 

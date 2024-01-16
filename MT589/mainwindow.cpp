@@ -728,48 +728,134 @@ void MainWindow::on_save_file_triggered()
 
 void MainWindow::on_action_COM_triggered()
 {
-    //printf("hello word");
     QString labelText_1 = ui->action_COM->text();
     if(labelText_1 == "Подключить STM32"){
-        LPCTSTR sPortName = L"COM6";
-        hSerial = ::CreateFile(sPortName, GENERIC_READ | GENERIC_WRITE, 0, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
 
-        if (hSerial == INVALID_HANDLE_VALUE)
+        qInfo() << "Нажат if";
+        int r = 0;
+        HKEY hkey = NULL;
+        //Открываем раздел реестра, в котором хранится иинформация о COM портах
+        r = RegOpenKeyEx(HKEY_LOCAL_MACHINE, TEXT("HARDWARE\\DEVICEMAP\\SERIALCOMM\\"), 0, KEY_READ, &hkey);
+        if (r != ERROR_SUCCESS){
+             return;
+        }
+
+
+        unsigned long CountValues = 0, MaxValueNameLen = 0, MaxValueLen = 0;
+        //Получаем информацию об открытом разделе реестра
+        RegQueryInfoKey(hkey, NULL, NULL, NULL, NULL, NULL, NULL, &CountValues, &MaxValueNameLen, &MaxValueLen, NULL, NULL);
+        ++MaxValueNameLen;
+        //Выделяем память
+        TCHAR* bufferName = NULL, * bufferData = NULL;
+        bufferName = (TCHAR*)malloc(MaxValueNameLen * sizeof(TCHAR));
+        if (!bufferName)
         {
-            if (GetLastError() == ERROR_FILE_NOT_FOUND)
+            RegCloseKey(hkey);
+            return;
+        }
+        bufferData = (TCHAR*)malloc((MaxValueLen + 1) * sizeof(TCHAR));
+        if (!bufferData)
+        {
+            free(bufferName);
+            RegCloseKey(hkey);
+            return;
+        }
+        unsigned long NameLen, type, DataLen;
+        //Цикл перебора параметров раздела реестра
+        for (unsigned int i = 0; i < CountValues; i++)
+        {
+            NameLen = MaxValueNameLen;
+            DataLen = MaxValueLen;
+            r = RegEnumValue(hkey, i, bufferName, &NameLen, NULL, &type, (LPBYTE)bufferData, &DataLen);
+            if ((r != ERROR_SUCCESS) || (type != REG_SZ)){
+                continue;
+            }
+
+            qInfo() << "Нажат if3";
+            QString Line;
+#ifdef UNICODE
+            Line = QString::fromWCharArray(bufferData);
+#else
+            Line = QString::fromLocal8Bit(bufferData);
+#endif
+            qInfo() << Line;
+            LPCTSTR s_name = bufferData;
+            hSerial = ::CreateFile(s_name, GENERIC_READ | GENERIC_WRITE, 0, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
+            if (hSerial == INVALID_HANDLE_VALUE)
             {
-                ui->label_36->setText("Отсутствует COM6 порт!");
+                if (GetLastError() == ERROR_FILE_NOT_FOUND)
+                {
+                    qInfo()<< "serial port does not exist.\n\n";
+                     CloseHandle(hSerial);
+                    continue;
+                }
+                qInfo()<< "some other error occurred on port.\n\n";
+                 CloseHandle(hSerial);
+                continue;
+            }
+
+            DCB dcbSerialParams = { 0 };
+            dcbSerialParams.DCBlength = sizeof(dcbSerialParams);
+            if (!GetCommState(hSerial, &dcbSerialParams))
+            {
+                qInfo()<< "getting state error \n\n";
+                 CloseHandle(hSerial);
+                continue;
+            }
+            dcbSerialParams.BaudRate = CBR_115200;
+            dcbSerialParams.ByteSize = 8;
+            dcbSerialParams.StopBits = ONESTOPBIT;
+            dcbSerialParams.Parity = NOPARITY;
+            if (!SetCommState(hSerial, &dcbSerialParams))
+            {
+                qInfo()<< "error setting serial port state \n\n";
+                 CloseHandle(hSerial);
+                continue;
+            }
+
+            char data[4] = { 98,0,0,226 };  // строка для передачи
+            DWORD dwSize = sizeof(data);   // размер этой строки
+            DWORD dwBytesWritten;    // тут будет количество собственно переданных байт
+
+            BOOL iRet = WriteFile(hSerial, data, dwSize, &dwBytesWritten, NULL);
+            qInfo()<< dwSize << " Bytes in string. " << dwBytesWritten << " Bytes sended. ";
+            for (size_t i = 0; i < dwSize; i++)
+            {
+                qInfo()<< (int)data[i] << " ";
+            }
+
+            COMMTIMEOUTS tTimeout;
+            tTimeout.ReadIntervalTimeout = MAXWORD;
+            tTimeout.ReadTotalTimeoutMultiplier = 0;
+            tTimeout.ReadTotalTimeoutConstant = 500; // pas de time out = 0
+            tTimeout.WriteTotalTimeoutMultiplier = 0;
+            tTimeout.WriteTotalTimeoutConstant = 0;
+            if (!SetCommTimeouts((HANDLE)hSerial, &tTimeout))
+            {
                 return;
             }
-            ui->label_36->setText("Ошибка подключения!");
-            return;
+            DWORD iSize;
+            char sReceivedChar[18];
+            ReadFile(hSerial, &sReceivedChar, 18, &iSize, 0);  // получаем 1 байт
+            if (iSize > 0) {   // если что-то принято, выводим.
+                if(sReceivedChar[0] == '\x10' && sReceivedChar[1] == 'T' &&  sReceivedChar[2] == 'M'){
+                    for (int i = 0; i < 18; ++i) {
+                        qInfo() << sReceivedChar[i];
+                    }
+                    ui->label_36->setText("STM32 подключен!");
+                    mk.SetHSerial(hSerial);
+                }
+            }
         }
-
-        DCB dcbSerialParams = { 0 };
-        dcbSerialParams.DCBlength = sizeof(dcbSerialParams);
-        if (!GetCommState(hSerial, &dcbSerialParams))
-        {
-            ui->label_36->setText("Ошибка подключения!!!");
-            return;
-        }
-        dcbSerialParams.BaudRate = CBR_115200;
-        dcbSerialParams.ByteSize = 8;
-        dcbSerialParams.StopBits = ONESTOPBIT;
-        dcbSerialParams.Parity = NOPARITY;
-
-        if (!SetCommState(hSerial, &dcbSerialParams))
-        {
-            ui->label_36->setText("Ошибка подключения!!!!");
-            return;
-        }
-
-        ui->label_36->setText("STM32 подключен!");
-        mk.SetHSerial(hSerial);
-
+        //Освобождаем память
+        free(bufferName);
+        free(bufferData);
+        //Закрываем раздел реестра
+        RegCloseKey(hkey);
     }
     else{
         ui->label_36->setText("Не подключено!");
-         CloseHandle(hSerial);
+        //CloseHandle(hSerial);
     }
 
 
