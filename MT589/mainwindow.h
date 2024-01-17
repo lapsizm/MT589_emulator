@@ -30,7 +30,9 @@ public:
     HANDLE getSerial(){
         return hSerial;
     }
-
+    static void Hell(){
+        qInfo() << "jhell";
+    }
     void ShowCOMPorts();
 
     void add_cpe_funcs();

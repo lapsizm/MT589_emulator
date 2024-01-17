@@ -7,7 +7,6 @@
 #include "ram.h"
 
 
-
 // Microcomputer with microcommand control (by default)
 class MK589
 {
@@ -21,6 +20,7 @@ public:
     void SetHSerial(HANDLE& hser){
         hSerial = hser;
     }
+
 
 
     std::vector<CPE> cpe_arr;
@@ -70,9 +70,7 @@ private:
     int send(const char package[4]);
 
     void ReadCOM(uint8_t num_reg);
-
-
-
+    void ReadCOMGPIO(uint8_t num_reg);
 
 
     //====decoding

@@ -97,26 +97,54 @@ void MK589::ReadCOM(uint8_t num_reg)
     COMMTIMEOUTS tTimeout;
     tTimeout.ReadIntervalTimeout = MAXWORD;
     tTimeout.ReadTotalTimeoutMultiplier = 0;
-    tTimeout.ReadTotalTimeoutConstant = 3500    ; // pas de time out = 0
+    tTimeout.ReadTotalTimeoutConstant = 2500    ; // pas de time out = 0
     tTimeout.WriteTotalTimeoutMultiplier = 0;
-    tTimeout.WriteTotalTimeoutConstant = 0;
+    tTimeout.WriteTotalTimeoutConstant = 2500;
     if (!SetCommTimeouts((HANDLE)hSerial, &tTimeout))
     {
         return;
     }
     DWORD iSize;
-    uint8_t sReceivedChar[4];
-    ReadFile(hSerial, &sReceivedChar, 4, &iSize, 0);  // получаем 1 байт
+    char sReceivedChar[6];
+    ReadFile(hSerial, &sReceivedChar[0], 6, &iSize, 0);  // получаем 1 байт
     if (iSize > 0) {   // если что-то принято, выводим.
         qInfo() << iSize;
-        for (int i = 0; i < 4; ++i) {
-            qInfo() << i << (int)sReceivedChar[i];
+        for(int i = 0; i < iSize; ++i){
+            qInfo() << (int)sReceivedChar[i];
         }
-        qInfo() << "\n";
-        cpe_arr[0].MEM[num_reg] = uint8_t(sReceivedChar[2]);
+
+        cpe_arr[0].MEM[num_reg] = int(sReceivedChar[4]);
         return;
     }
 }
+
+void MK589::ReadCOMGPIO(uint8_t num_reg)
+{
+    qInfo() << "Пришел в ридком1";
+    COMMTIMEOUTS tTimeout;
+    tTimeout.ReadIntervalTimeout = MAXWORD;
+    tTimeout.ReadTotalTimeoutMultiplier = 0;
+    tTimeout.ReadTotalTimeoutConstant = 2500    ; // pas de time out = 0
+    tTimeout.WriteTotalTimeoutMultiplier = 0;
+    tTimeout.WriteTotalTimeoutConstant = 2500;
+    if (!SetCommTimeouts((HANDLE)hSerial, &tTimeout))
+    {
+        return;
+    }
+    DWORD iSize;
+    char sReceivedChar[8];
+    ReadFile(hSerial, &sReceivedChar[0], 8, &iSize, 0);  // получаем 1 байт
+    if (iSize > 0) {   // если что-то принято, выводим.
+        qInfo() << iSize;
+        for(int i = 0; i < iSize; ++i){
+            qInfo() << (int)sReceivedChar[i];
+        }
+
+        cpe_arr[0].MEM[num_reg] = int(sReceivedChar[6]);
+        return;
+    }
+}
+
 
 
 void MK589::do_fetch_decode_execute_cycle(const microcommand &mc) {
@@ -125,11 +153,17 @@ void MK589::do_fetch_decode_execute_cycle(const microcommand &mc) {
     fetch_cpe(mc.F, mc.K, mc.I, mc.M, mc.ED, mc.EA);
 
     if(!(mc.f_ext == "00000000")){
-        // type comand | type interface | num_reg
+        // type command | num_reg
         // 0001**** - setup, uart-write
         // 0010**** - send from **** reg to stm by uart
-        // 0011**** - setup uart-read
-        // 0100**** - read to **** reg from stm by uart
+        // 0011**** - setup uart-read, read to **** reg from stm by uart
+        // 0100**** - setup GPIOA
+        // 0101**** - write GPIOA from **** reg
+        // 0110**** - read GPIOA to **** reg
+        // 0111**** - write GPIOE from **** reg
+        // 1000**** - read GPIOE to **** reg
+        // 1001**** - write GPIOE from **** reg
+        // 1010**** - read GPIOE to **** reg
 
 
         qInfo() << "СТОЮ НА КОМАНДЕ ОТПРАВИТЬ\n";
@@ -150,10 +184,74 @@ void MK589::do_fetch_decode_execute_cycle(const microcommand &mc) {
         else if(f_group == "0011"){
             char data_read[4] = { 34,0b00000011,(char)138,(char)162 };
             send(data_read);
-        }
-        else if(f_group == "0100"){
+            Sleep(100);
             ReadCOM(num_reg);
         }
+        else if(f_group == "0100"){
+            char data[4] = { 66,0b00001111,0b00000000,194 };
+            send(data);
+        }
+        else if(f_group == "0101"){
+            char data2[4] = { 66,0b00000001,0,194 };
+            data2[2] = (char)MEM[num_reg];
+            send(data2);
+            qInfo() << "REg is "  << data2[2];
+        }
+        else if(f_group == "0110"){
+            char data1[4] = { 34,0b00000001,138,162 };
+            send(data1);
+            Sleep(100);
+            ReadCOMGPIO(num_reg);
+        }
+        else if(f_group == "0111"){
+            char data2[4] = { 66,0b00001010,0,194 };
+            data2[2] = (char)MEM[num_reg];
+            send(data2);
+            qInfo() << "REg is "  << data2[2];
+        }
+        else if(f_group == "1000"){
+            char data1[4] =  { 34,0b00001010,138,162 };
+            send(data1);
+            Sleep(100);
+            ReadCOMGPIO(num_reg);
+        }
+        else if(f_group == "1001"){
+            char data2[4] = { 66,0b00000111,0,194 };
+            data2[2] = (char)MEM[num_reg];
+            send(data2);
+            qInfo() << "REg is "  << data2[2];
+        }
+        else if(f_group == "1010"){
+            char data1[4] =  { 34,0b00000111,138,162 };
+            send(data1);
+            Sleep(100);
+            ReadCOM(num_reg);
+        }
+        else if(f_group == "1011"){
+            char data[4] = { 66,0b000001111,0b01000000,194 };
+            send(data);
+        }
+        else if(f_group == "1100"){
+            char data1[4] = { 66,0b00100111,0,194 };
+            data1[2] = (char)MEM[num_reg];
+            send(data1);
+        }
+        else if(f_group == "1101"){
+            char data1[4] = { 34,0b00100111,156,162 };
+            send(data1);
+            Sleep(100);
+            ReadCOMGPIO(num_reg);
+        }
+        else if(f_group == "1110"){
+            char data[4] = { 66,0b000001111,0b00100000,194 };
+            send(data);
+        }
+        else if(f_group == "1111"){
+            char data1[4] = { 66,0b10001010,0,194 };
+            data1[2] = (char)MEM[num_reg];
+            send(data1);
+        }
+
         else{
             qInfo() << "Неизвестный тип микрокоманды!";
         }

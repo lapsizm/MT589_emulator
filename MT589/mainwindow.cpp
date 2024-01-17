@@ -809,7 +809,7 @@ void MainWindow::on_action_COM_triggered()
             if (!SetCommState(hSerial, &dcbSerialParams))
             {
                 qInfo()<< "error setting serial port state \n\n";
-                 CloseHandle(hSerial);
+                CloseHandle(hSerial);
                 continue;
             }
 
@@ -838,12 +838,11 @@ void MainWindow::on_action_COM_triggered()
             char sReceivedChar[18];
             ReadFile(hSerial, &sReceivedChar, 18, &iSize, 0);  // получаем 1 байт
             if (iSize > 0) {   // если что-то принято, выводим.
-                if(sReceivedChar[0] == '\x10' && sReceivedChar[1] == 'T' &&  sReceivedChar[2] == 'M'){
-                    for (int i = 0; i < 18; ++i) {
-                        qInfo() << sReceivedChar[i];
-                    }
+                if(sReceivedChar[0] == '\x10' && sReceivedChar[1] == 'H' &&  sReceivedChar[2] == 'e'){
+                    qInfo() << sReceivedChar;
                     ui->label_36->setText("STM32 подключен!");
                     mk.SetHSerial(hSerial);
+                    break;
                 }
             }
         }
