@@ -64,6 +64,8 @@ void MainWindow::ShowCOMPorts()
     free(bufferData);
     //Закрываем раздел реестра
     RegCloseKey(hkey);
+
+
 }
 
 MainWindow::MainWindow(QWidget *parent)
@@ -81,6 +83,7 @@ MainWindow::MainWindow(QWidget *parent)
     setupRAM();
     configUIMode();
     qInfo() << "START\n";
+    mk.SetQLabels(ui->label_39, ui->label_40);
 }
 
 MainWindow::~MainWindow()
@@ -842,6 +845,8 @@ void MainWindow::on_action_COM_triggered()
                     qInfo() << sReceivedChar;
                     ui->label_36->setText("STM32 подключен!");
                     mk.SetHSerial(hSerial);
+                    ui->label_39->setText("INIT");
+                    ui->label_40->setText("INIT");
                     break;
                 }
             }
@@ -877,6 +882,47 @@ void MainWindow::on_open_command_mode_triggered()
     window->mk = mk;
     window->show();
     this->hide();
+}
+
+void MainWindow::on_action_2_triggered(){
+    qInfo() << "HELFWOFWE";
+    QWidget *a = new QWidget;
+    QLabel* b = new QLabel(a);
+        // type command | num_reg
+        // 0001**** - setup, uart-write
+        // 0010**** - send from **** reg to stm by uart
+        // 0011**** - setup uart-read, read to **** reg from stm by uart
+        // 0100**** - setup GPIOA
+        // 0101**** - write GPIOA from **** reg
+        // 0110**** - read GPIOA to **** reg
+        // 0111**** - write GPIOE from **** reg
+        // 1000**** - read GPIOE to **** reg
+        // 1001**** - write GPIOE from **** reg
+        // 1010**** - read GPIOE to **** reg
+        // 1011**** - setup SPI
+        // 1100**** - write from **** reg to stm by SPI
+        // 1101**** - write to **** reg from stm by SPI
+        // 1110**** - setup I2C
+        // 1111**** - write by I2C
+    b->setText("        // 0001**** - setup, uart-write\n"
+               "        // 0010**** - send from **** reg to stm by uart\n"
+               "        // 0011**** - setup uart-read, read to **** regfrom stm \n"
+               "        // 0100**** - setup GPIOA\n"
+               "        // 0101**** - write GPIOA from **** reg\n"
+                "        // 0110**** - read GPIOA to **** reg\n"
+                "        // 0111**** - write GPIOE from **** reg\n"
+                "        // 1000**** - read GPIOE to **** reg\n"
+                "        // 1001**** - write GPIOE from **** reg\n"
+                "        // 1010**** - read GPIOE to **** reg\n"
+                "        // 1011**** - setup SPI\n"
+                "        // 1100**** - write from **** reg to stm by SPI\n"
+                "        // 1101**** - write to **** reg from stm by SPI\n"
+                "        // 1110**** - setup I2C\n"
+                "        // 1111**** - write by I2C");
+    a->setFixedSize(300,400);
+    a->show();
+
+
 }
 
 void MainWindow::setupItems() {

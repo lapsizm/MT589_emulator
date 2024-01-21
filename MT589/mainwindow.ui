@@ -35,7 +35,7 @@
    <string>MainWindow</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="../build-MT589-Desktop_Qt_6_5_3_MSVC2019_64bit-Debug/debug/qmake_qmake_qm_files.qrc">
+   <iconset resource="../build-MT589-Desktop_Qt_6_6_0_MinGW_64_bit-Debug/debug/qmake_qmake_qm_files.qrc">
     <normaloff>:/i18n/MT589_ru_RU.qm</normaloff>:/i18n/MT589_ru_RU.qm</iconset>
   </property>
   <widget class="QWidget" name="centralwidget">
@@ -1251,9 +1251,9 @@
         <property name="geometry">
          <rect>
           <x>0</x>
-          <y>0</y>
+          <y>-2</y>
           <width>559</width>
-          <height>239</height>
+          <height>241</height>
          </rect>
         </property>
         <property name="editTriggers">
@@ -3551,6 +3551,7 @@
      <string>Внешние устройства</string>
     </property>
     <addaction name="action_COM"/>
+    <addaction name="action_2"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menu_3"/>
@@ -3608,9 +3609,14 @@
     <string>Подключить STM32</string>
    </property>
   </action>
+  <action name="action_2">
+   <property name="text">
+    <string>Протокол общения</string>
+   </property>
+  </action>
  </widget>
  <resources>
-  <include location="../build-MT589-Desktop_Qt_6_5_3_MSVC2019_64bit-Debug/debug/qmake_qmake_qm_files.qrc"/>
+  <include location="../build-MT589-Desktop_Qt_6_6_0_MinGW_64_bit-Debug/debug/qmake_qmake_qm_files.qrc"/>
  </resources>
  <connections/>
 </ui>

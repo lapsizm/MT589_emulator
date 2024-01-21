@@ -130,6 +130,8 @@ private slots:
 
     void on_action_COM_triggered();
 
+    void on_action_2_triggered();
+
     void on_tableWidget_cellChanged(int row, int column);
 
 private:
@@ -137,6 +139,7 @@ private:
     // UI Objects
 
     Ui::MainWindow *ui;
+
 
     std::vector<QLCDNumber*> regLCDs = {};
 

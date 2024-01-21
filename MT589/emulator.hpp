@@ -6,12 +6,16 @@
 #include "rom.h"
 #include "ram.h"
 
+#include <QLabel>
+
 
 // Microcomputer with microcommand control (by default)
 class MK589
 {
 private:
     HANDLE hSerial;
+    QLabel* interf;
+    QLabel* type;
 public:
     MK589();
     MK589(const MK589& mk);
@@ -19,6 +23,10 @@ public:
 
     void SetHSerial(HANDLE& hser){
         hSerial = hser;
+    }
+    void SetQLabels(QLabel* q1,QLabel* q2){
+        interf = q1;
+        type = q2;
     }
 
 

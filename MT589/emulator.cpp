@@ -164,6 +164,11 @@ void MK589::do_fetch_decode_execute_cycle(const microcommand &mc) {
         // 1000**** - read GPIOE to **** reg
         // 1001**** - write GPIOE from **** reg
         // 1010**** - read GPIOE to **** reg
+        // 1011**** - setup SPI
+        // 1100**** - write from **** reg to stm by SPI
+        // 1101**** - write to **** reg from stm by SPI
+        // 1110**** - setup I2C
+        // 1111**** - write by I2C
 
 
         qInfo() << "СТОЮ НА КОМАНДЕ ОТПРАВИТЬ\n";
@@ -174,82 +179,112 @@ void MK589::do_fetch_decode_execute_cycle(const microcommand &mc) {
         if(f_group == "0001"){
             char data_setup[4] = { 66,0b00001111,(char)0b10000000,(char)194 };
             send(data_setup);
+            interf->setText("UART");
+            type->setText("SETUP");
         }
         else if(f_group == "0010"){
             char data_write[4] = {66,0b00000011,0,(char)194};
             data_write[2] = (char)MEM[num_reg];
             qInfo() << "REg is "  << data_write[2];
             send(data_write);
+            interf->setText("UART");
+            type->setText("WRITE");
         }
         else if(f_group == "0011"){
             char data_read[4] = { 34,0b00000011,(char)138,(char)162 };
             send(data_read);
             Sleep(100);
-            ReadCOM(num_reg);
+            ReadCOMGPIO(num_reg);
+            interf->setText("UART");
+            type->setText("READ");
         }
         else if(f_group == "0100"){
-            char data[4] = { 66,0b00001111,0b00000000,194 };
+            char data[4] = { 66,0b00001111,0b00000000,(char)194 };
             send(data);
+            interf->setText("GPIO");
+            type->setText("SETUP");
         }
         else if(f_group == "0101"){
-            char data2[4] = { 66,0b00000001,0,194 };
+            char data2[4] = { 66,0b00000001,0,(char)194 };
             data2[2] = (char)MEM[num_reg];
             send(data2);
             qInfo() << "REg is "  << data2[2];
+            interf->setText("GPIOA");
+            type->setText("WRITE");
         }
         else if(f_group == "0110"){
-            char data1[4] = { 34,0b00000001,138,162 };
+            char data1[4] = { 34,0b00000001,(char)138,(char)162 };
             send(data1);
             Sleep(100);
             ReadCOMGPIO(num_reg);
+            interf->setText("GPIOA");
+            type->setText("READ");
         }
         else if(f_group == "0111"){
-            char data2[4] = { 66,0b00001010,0,194 };
+            char data2[4] = { 66,0b00001010,0,(char)194 };
             data2[2] = (char)MEM[num_reg];
             send(data2);
             qInfo() << "REg is "  << data2[2];
+            interf->setText("GPIOE");
+            type->setText("WRITE");
         }
         else if(f_group == "1000"){
-            char data1[4] =  { 34,0b00001010,138,162 };
+            char data1[4] =  { 34,0b00001010,(char)138,(char)162 };
             send(data1);
             Sleep(100);
             ReadCOMGPIO(num_reg);
+            interf->setText("GPIOE");
+            type->setText("READ");
         }
         else if(f_group == "1001"){
-            char data2[4] = { 66,0b00000111,0,194 };
+            char data2[4] = { 66,0b00000111,0,(char)194 };
             data2[2] = (char)MEM[num_reg];
             send(data2);
             qInfo() << "REg is "  << data2[2];
+            interf->setText("GPIOC");
+            type->setText("WRITE");
         }
         else if(f_group == "1010"){
-            char data1[4] =  { 34,0b00000111,138,162 };
+            char data1[4] =  { 34,0b00000111,(char)138,(char)162 };
             send(data1);
             Sleep(100);
             ReadCOM(num_reg);
+            interf->setText("GPIOC");
+            type->setText("READ");
         }
         else if(f_group == "1011"){
-            char data[4] = { 66,0b000001111,0b01000000,194 };
+            char data[4] = { 66,0b000001111,0b01000000,(char)194 };
             send(data);
+            interf->setText("SPI");
+            type->setText("SETUP");
         }
         else if(f_group == "1100"){
-            char data1[4] = { 66,0b00100111,0,194 };
+            char data1[4] = { 66,0b00100111,0,(char)194 };
             data1[2] = (char)MEM[num_reg];
             send(data1);
+            interf->setText("SPI");
+            type->setText("WRITE");
         }
         else if(f_group == "1101"){
-            char data1[4] = { 34,0b00100111,156,162 };
+            char data1[4] = { 34,0b00100111,(char)156,(char)162 };
             send(data1);
             Sleep(100);
             ReadCOMGPIO(num_reg);
+            interf->setText("SPI");
+            type->setText("READ");
         }
         else if(f_group == "1110"){
-            char data[4] = { 66,0b000001111,0b00100000,194 };
+            char data[4] = { 66,0b000001111,0b00100000,(char)194 };
             send(data);
+            interf->setText("I2C");
+            type->setText("SETUP");
         }
         else if(f_group == "1111"){
-            char data1[4] = { 66,0b10001010,0,194 };
+            char data1[4] = { 66,(char)0b10001010,0,(char)194 };
             data1[2] = (char)MEM[num_reg];
             send(data1);
+            interf->setText("I2C");
+            type->setText("WRITE");
         }
 
         else{
